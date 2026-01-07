@@ -48,3 +48,26 @@ jobs:
             org.opencontainers.image.licenses=MIT
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # ... 前面部分保持不变 ...
+
+- name: Extract metadata (tags, labels) for Docker
+  id: meta
+  uses: docker/metadata-action@v5   # 建议用最新版本 v5
+  with:
+    images: |
+      ghcr.io/${{ github.repository }}
+    # 可选：如果你想自定义 tags，可以在这里加
+    tags: |
+      type=raw,value=latest,enable={{ is_default_branch }}
+      type=sha,prefix=sha-
+
+# 然后在 build-push 步骤中使用它生成的 tags
+- name: Build and push Docker image
+  uses: docker/build-push-action@v6   # 也建议更新到最新版本
+  with:
+    context: .
+    file: ./Dockerfile   # 你的 Dockerfile 路径
+    push: true
+    tags: ${{ steps.meta.outputs.tags }}
+    labels: ${{ steps.meta.outputs.labels }}
+    # 其他你需要的参数，比如 platforms, cache-from 等
